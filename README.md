@@ -40,7 +40,7 @@
 
 ## วงจรและอุปกรณ์จริง
 ![แผนผังวงจร](Images/diagram.jpg)
-![อุปกรณ์ต้นแบบ](Images/prototype.jpg)
+![อุปกรณ์ต้นแบบ](Images/Prototype.jpg)
 
 ## Web Dashboard
 ![หน้าเว็บ Dashboard](Images/dashboard.png)
