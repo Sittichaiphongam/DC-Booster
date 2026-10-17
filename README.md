@@ -35,14 +35,14 @@
 6. เว็บ Dashboard ขอข้อมูลจาก ESP32 #2 ผ่าน HTTP เพื่อแสดงผล
 
 ## ภาพรวมระบบ
-![ภาพรวมระบบ](images/system-overview.png)
+![ภาพรวมระบบ](Images/system-overview.png)
 
 ## วงจรและอุปกรณ์จริง
-![แผนผังวงจร](images/circuit-diagram.png)
-![อุปกรณ์ต้นแบบ](images/prototype.jpg)
+![แผนผังวงจร](Images/circuit-diagram.png)
+![อุปกรณ์ต้นแบบ](Images/prototype.jpg)
 
 ## Web Dashboard
-![หน้าเว็บ Dashboard](images/dashboard.png)
+![หน้าเว็บ Dashboard](Images/dashboard.png)
 
 ## การควบคุมแรงดัน
 
