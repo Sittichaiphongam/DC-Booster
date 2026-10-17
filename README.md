@@ -35,7 +35,8 @@
 6. เว็บ Dashboard ขอข้อมูลจาก ESP32 #2 ผ่าน HTTP เพื่อแสดงผล
 
 ## ภาพรวมระบบ
-![ภาพรวมระบบ](Images/system-overview.png)
+![ภาพรวมระบบ](Images/system-overview1.png)
+![ภาพรวมระบบ](Images/system-overview2.png)
 
 ## วงจรและอุปกรณ์จริง
 ![แผนผังวงจร](Images/circuit-diagram.png)
