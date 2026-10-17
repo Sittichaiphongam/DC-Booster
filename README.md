@@ -39,7 +39,7 @@
 ![ภาพรวมระบบ](Images/system-overview2.png)
 
 ## วงจรและอุปกรณ์จริง
-![แผนผังวงจร](Images/diagram.png)
+![แผนผังวงจร](Images/diagram.jpg)
 ![อุปกรณ์ต้นแบบ](Images/prototype.jpg)
 
 ## Web Dashboard
