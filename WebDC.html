@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Predictive MPPT Monitoring Dashboard</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --panel: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --sub: #64748b;
+      --sensor: #2f6fed;
+      --sensor-soft: #8fb8ff;
+      --input: #c9761a;
+      --input-soft: #f0b06a;
+      --output: #178a49;
+      --output-soft: #7bc69a;
+      --control: #6a4cc4;
+      --control-soft: #aa99df;
+      --good: #16a34a;
+      --bad: #dc2626;
+      --warning: #c9771a;
+      --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 4px 14px rgba(15, 23, 42, .06);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .page {
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 18px;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #fff;
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--sensor), #60a5fa);
+      font-size: 20px;
+      flex: none;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .brand-sub {
+      font-size: .72rem;
+      color: #94a3b8;
+      margin-top: 3px;
+    }
+
+    .clock-box {
+      text-align: right;
+      min-width: 175px;
+    }
+
+    .clock-date {
+      font-size: .8rem;
+      color: #cbd5e1;
+    }
+
+    .clock-time {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: .03em;
+      line-height: 1.15;
+      margin-top: 2px;
+    }
+
+    .clock-source {
+      font-size: .67rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    .status-box {
+      text-align: right;
+      min-width: 130px;
+    }
+
+    .status-text {
+      font-size: .82rem;
+      font-weight: 800;
+      letter-spacing: .03em;
+    }
+
+    .status-sub {
+      font-size: .67rem;
+      color: #94a3b8;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #94a3b8;
+      margin-right: 6px;
+      vertical-align: 1px;
+    }
+
+    .status-dot.on {
+      background: #22c55e;
+    }
+
+    .status-dot.off {
+      background: #ef4444;
+    }
+
+    /* CONTROLS */
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .control-label {
+      font-size: .72rem;
+      color: var(--sub);
+      font-weight: 700;
+      margin-right: -2px;
+    }
+
+    .controls input,
+    .controls select {
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: .85rem;
+    }
+
+    .controls input:focus,
+    .controls select:focus {
+      outline: 2px solid rgba(47, 111, 237, .25);
+      outline-offset: 1px;
+    }
+
+    #ip {
+      width: 160px;
+    }
+
+    #interval {
+      width: 78px;
+    }
+
+    button {
+      background: #111;
+      color: #fff;
+      border: 1px solid #111;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: .85rem;
+      transition: transform .12s, filter .12s, background .12s;
+    }
+
+    button:hover {
+      filter: brightness(1.06);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    button.stop {
+      background: #fff;
+      color: #111;
+    }
+
+    button.ghost {
+      background: #fff;
+      border: 1px solid #bbb;
+      color: var(--text);
+    }
+
+    button.active {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+
+    button.chart-toggle {
+      padding: 7px 12px;
+      font-size: .78rem;
+    }
+
+    .system-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .system-card,
+    .summary-card,
+    .section-card,
+    .chart-panel,
+    .log-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .system-card {
+      padding: 10px 12px;
+    }
+
+    .system-label {
+      font-size: .67rem;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      font-weight: 700;
+    }
+
+    .system-value {
+      font-size: .92rem;
+      font-weight: 800;
+      margin-top: 3px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .system-muted {
+      font-size: .66rem;
+      color: var(--sub);
+      margin-top: 2px;
+    }
+
+    /* SUMMARY */
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      margin: 14px 0 8px;
+    }
+
+    .section-heading h2 {
+      font-size: .85rem;
+      margin: 0;
+      font-weight: 800;
+    }
+
+    .section-heading span {
+      font-size: .68rem;
+      color: var(--sub);
+    }
+
+    .primary-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .primary-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .primary-card.input {
+      border-top: 3px solid var(--input);
+    }
+
+    .primary-card.output {
+      border-top: 3px solid var(--output);
+    }
+
+    .primary-label {
+      font-size: .68rem;
+      color: var(--sub);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .primary-value {
+      font-size: 1.42rem;
+      font-weight: 800;
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .primary-card.input .primary-value {
+      color: var(--input);
+    }
+
+    .primary-card.output .primary-value {
+      color: var(--output);
+    }
+
+    .trend {
+      font-size: .66rem;
+      color: var(--sub);
+      margin-top: 3px;
+      white-space: nowrap;
+    }
+
+    .trend.up {
+      color: var(--good);
+    }
+
+    .trend.down {
+      color: var(--bad);
+    }
+
+    .secondary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .secondary-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .secondary-card.sensor {
+      border-top: 3px solid var(--sensor);
+    }
+
+    .secondary-card.control {
+      border-top: 3px solid var(--control);
+    }
+
+    .secondary-label {
+      font-size: .68rem;
+      color: var(--sub);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .secondary-value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .secondary-card.sensor .secondary-value {
+      color: var(--sensor);
+    }
+
+    .secondary-card.control .secondary-value {
+      color: var(--control);
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 260px;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .overview-grid.single-overview {
+      grid-template-columns: 1fr;
+    }
+
+    .overview-card {
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .overview-title {
+      font-size: .72rem;
+      color: var(--sub);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .eff-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 7px;
+    }
+
+    .eff-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      min-width: 95px;
+    }
+
+    .eff-progress {
+      height: 9px;
+      background: #eef2f7;
+      border-radius: 5px;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .eff-progress-fill {
+      height: 100%;
+      width: 0;
+      background: var(--good);
+      transition: width .3s;
+    }
+
+    .eff-note {
+      font-size: .67rem;
+      color: var(--sub);
+      margin-top: 4px;
+    }
+
+    .fresh-value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-top: 6px;
+    }
+
+    .fresh-note {
+      font-size: .67rem;
+      color: var(--sub);
+      margin-top: 2px;
+    }
+
+
+    /* HERO: P-V / I-V electrical curves */
+    .hero-ptvt {
+      margin-bottom: 8px;
+    }
+
+    .hero-note {
+      font-size: .68rem;
+      color: var(--sub);
+      line-height: 1.45;
+      margin-top: 2px;
+    }
+
+    .hero-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+    }
+
+    .hero-toolbar-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .hero-toolbar-label {
+      font-size: .69rem;
+      color: var(--sub);
+      font-weight: 700;
+      margin-right: 2px;
+    }
+
+    .hero-toggle {
+      padding: 7px 12px;
+      font-size: .78rem;
+    }
+
+    .hero-toggle.active {
+      background: #111;
+      color: #fff;
+      border-color: #111;
+    }
+
+    .hero-curve-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .hero-chart-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .hero-chart-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 2px;
+    }
+
+    .hero-chart-title h3 {
+      margin: 0;
+      font-size: .92rem;
+      font-weight: 800;
+      color: #111;
+    }
+
+    .hero-current {
+      font-size: .72rem;
+      font-weight: 800;
+      color: #334155;
+    }
+
+    .hero-sub {
+      font-size: .66rem;
+      color: var(--sub);
+      margin-bottom: 4px;
+    }
+
+    canvas.hero-canvas {
+      width: 100%;
+      height: 300px;
+      display: block;
+      background: #fff;
+      border: 1px solid #e2e5ea;
+      border-radius: 6px;
+    }
+
+    .hero-axis-guide {
+      font-size: .64rem;
+      color: #6b6b6b;
+      margin-top: 5px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      line-height: 1.35;
+      flex-wrap: wrap;
+    }
+
+    .hero-compare {
+      margin-top: 6px;
+      padding: 6px 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #f8fafc;
+      font-size: .66rem;
+      color: #475569;
+    }
+
+    .hero-itvt {
+      margin-top: 14px;
+    }
+
+    .hero-itvt .hero-chart-card {
+      border-top: 3px solid var(--sensor);
+    }
+
+    @media(max-width:900px) {
+      .hero-curve-grid {
+        grid-template-columns: 1fr;
+      }
+
+      canvas.hero-canvas {
+        height: 280px;
+      }
+    }
+
+    /* CHART CONTROLS */
+    .chart-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+    }
+
+    .chart-tool-group {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .chart-tool-label {
+      font-size: .69rem;
+      color: var(--sub);
+      font-weight: 700;
+      margin-right: 2px;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .chart-grid.single {
+      grid-template-columns: 1fr;
+    }
+
+    .chart-box {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+      position: relative;
+      min-width: 0;
+      cursor: pointer;
+    }
+
+    .chart-box h3 {
+      font-size: .9rem;
+    }
+
+    .chart-box .sub {
+      font-size: .68rem;
+    }
+
+    .axis-guide {
+      font-size: .66rem;
+      color: #5f6368;
+      margin-top: 5px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      line-height: 1.35;
+    }
+
+    .axis-guide strong {
+      color: #333;
+    }
+
+    .chart-box:hover {
+      border-color: #b7c8ef;
+      box-shadow: 0 5px 18px rgba(15, 23, 42, .08);
+    }
+
+    .chart-box.hidden {
+      display: none;
+    }
+
+    .chart-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chart-box h3 {
+      margin: 0;
+      font-size: .86rem;
+      font-weight: 800;
+      color: #111;
+    }
+
+    .chart-box .sub {
+      font-size: .67rem;
+      color: var(--sub);
+      margin: 4px 0 6px;
+    }
+
+    canvas.chart-canvas {
+      width: 100%;
+      height: 250px;
+      display: block;
+      background: #fff;
+    }
+
+    .axis-guide {
+      font-size: .66rem;
+      color: #6b6b6b;
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      line-height: 1.35;
+    }
+
+    .axis-guide strong {
+      color: #333;
+    }
+
+    /* CANVAS TOOLTIP */
+    .chart-tooltip {
+      position: fixed;
+      z-index: 2000;
+      pointer-events: none;
+      display: none;
+      background: rgba(15, 23, 42, .96);
+      color: #fff;
+      border-radius: 7px;
+      padding: 7px 9px;
+      font-size: .7rem;
+      line-height: 1.45;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, .18);
+      white-space: nowrap;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, .6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      background: #fff;
+      width: min(94vw, 900px);
+      max-height: 94vh;
+      overflow: auto;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, .25);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    .modal-sub {
+      font-size: .7rem;
+      color: var(--sub);
+      margin-bottom: 8px;
+    }
+
+    .modal-close {
+      background: #eef2f7;
+      color: #111;
+      border: 0;
+      border-radius: 7px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+    }
+
+    canvas.modal-canvas {
+      width: 100%;
+      height: 470px;
+      display: block;
+      background: #fff;
+    }
+
+    /* LOG */
+    .log-card {
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .log-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .log-title {
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .log-meta {
+      font-size: .68rem;
+      color: var(--sub);
+    }
+
+    .log-filters {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .log-filters label {
+      font-size: .68rem;
+      color: var(--sub);
+      font-weight: 700;
+    }
+
+    .log-filters input {
+      background: #fff;
+      border: 1px solid #bbb;
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: .75rem;
+    }
+
+    .log-filters button {
+      padding: 6px 9px;
+      font-size: .72rem;
+    }
+
+    .logwrap {
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .75rem;
+    }
+
+    th,
+    td {
+      padding: 6px 8px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #f2f2f2;
+      color: #333;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border);
+      z-index: 1;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: #fafafa;
+    }
+
+    tbody tr:hover {
+      background: #eef4ff;
+    }
+
+    td {
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .empty-row td {
+      text-align: center !important;
+      color: var(--sub);
+      padding: 18px;
+    }
+
+    .err {
+      color: var(--bad);
+      font-size: .74rem;
+      font-weight: 600;
+      margin-left: 2px;
+      min-width: 100px;
+    }
+
+    @media(max-width:1100px) {
+      .primary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .system-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media(max-width:760px) {
+      body {
+        padding: 10px;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+        gap: 9px;
+      }
+
+      .clock-box,
+      .status-box {
+        text-align: left;
+      }
+
+      .primary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .secondary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .overview-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .system-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media(max-width:460px) {
+
+      .primary-grid,
+      .secondary-grid,
+      .system-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .primary-value {
+        font-size: 1.3rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- HEADER -->
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-logo">⚡</span>
+        <div>
+          <div class="brand-title">Predictive MPPT Monitoring Dashboard</div>
+          <div class="brand-sub">ระบบ MPPT เชิงคาดการณ์ที่ผสานด้วย AI</div>
+        </div>
+      </div>
+
+      <div class="clock-box" aria-live="polite">
+        <div class="clock-date" id="clockDate">กำลังโหลดวันที่...</div>
+        <div class="clock-time" id="clockTime">--:--:--</div>
+        <div class="clock-source" id="clockSource">กำลังซิงค์เวลา...</div>
+      </div>
+
+      <div class="status-box" aria-live="polite">
+        <div class="status-text"><span class="status-dot" id="statusDot"></span><span id="statusText">OFFLINE</span>
+        </div>
+        <div class="status-sub" id="statusSub">ยังไม่มีข้อมูลจาก ESP32</div>
+      </div>
+    </header>
+
+    <!-- CONTROLS -->
+    <div class="controls">
+      <span class="control-label">ESP32 IP</span>
+      <input id="ip" placeholder="เช่น 192.168.137.226" />
+      <span class="control-label">Refresh</span>
+      <input id="interval" type="number" value="10000" min="200" step="100" title="milliseconds" />
+      <span class="control-label">ms</span>
+      <button id="startBtn">เริ่ม</button>
+      <button id="stopBtn" class="stop" style="display:none;">หยุด</button>
+      <button id="clearBtn" class="ghost">ล้าง Log</button>
+      <button id="csvBtn" class="ghost">Export CSV</button>
+      <span class="err" id="errMsg"></span>
+    </div>
+
+    <!-- SYSTEM STATUS -->
+    <div class="system-strip">
+      <div class="system-card">
+        <div class="system-label">Device</div>
+        <div class="system-value" id="sysDevice">ESP32</div>
+        <div class="system-muted" id="sysFirmware">Firmware: –</div>
+      </div>
+      <div class="system-card">
+        <div class="system-label">IP Address</div>
+        <div class="system-value" id="sysIP">–</div>
+
+      </div>
+      <div class="system-card">
+        <div class="system-label">Wi-Fi RSSI</div>
+        <div class="system-value" id="sysRSSI">–</div>
+
+      </div>
+      <div class="system-card">
+        <div class="system-label">Response</div>
+        <div class="system-value" id="sysResponse">–</div>
+
+      </div>
+    </div>
+
+    <!-- PRIMARY VALUES -->
+    <div class="section-heading">
+      <h2>Electrical Values</h2>
+    </div>
+
+    <div class="primary-grid">
+      <div class="primary-card input">
+        <div class="primary-label">Current In (I)</div>
+        <div class="primary-value" id="v_iin">– A</div>
+        <div class="trend" id="trend_iin">ยังไม่มีข้อมูลก่อนหน้า</div>
+      </div>
+      <div class="primary-card input">
+        <div class="primary-label">Voltage In (V)</div>
+        <div class="primary-value" id="v_vin">– V</div>
+        <div class="trend" id="trend_vin">ยังไม่มีข้อมูลก่อนหน้า</div>
+      </div>
+      <div class="primary-card input">
+        <div class="primary-label">Power In (P)</div>
+        <div class="primary-value" id="v_pin">– W</div>
+        <div class="trend" id="trend_pin">ยังไม่มีข้อมูลก่อนหน้า</div>
+      </div>
+      <div class="primary-card output">
+        <div class="primary-label">Current Out (I)</div>
+        <div class="primary-value" id="v_iout">– A</div>
+        <div class="trend" id="trend_iout">ยังไม่มีข้อมูลก่อนหน้า</div>
+      </div>
+      <div class="primary-card output">
+        <div class="primary-label">Voltage Out (V)</div>
+        <div class="primary-value" id="v_vout">– V</div>
+        <div class="trend" id="trend_vout">ยังไม่มีข้อมูลก่อนหน้า</div>
+      </div>
+      <div class="primary-card output">
+        <div class="primary-label">Power Out (P)</div>
+        <div class="primary-value" id="v_pout">– W</div>
+        <div class="trend" id="trend_pout">ยังไม่มีข้อมูลก่อนหน้า</div>
+      </div>
+    </div>
+
+    <!-- SECONDARY VALUES -->
+    <div class="secondary-grid">
+      <div class="secondary-card sensor">
+        <div class="secondary-label">Channel</div>
+        <div class="secondary-value" id="v_ch">–</div>
+      </div>
+      <div class="secondary-card sensor">
+        <div class="secondary-label">Irradiation</div>
+        <div class="secondary-value" id="v_irr">– W/m²</div>
+      </div>
+      <div class="secondary-card sensor">
+        <div class="secondary-label">Temperature</div>
+        <div class="secondary-value" id="v_temp">– °C</div>
+      </div>
+      <div class="secondary-card control">
+        <div class="secondary-label">Duty Cycle</div>
+        <div class="secondary-value" id="v_duty">– %</div>
+      </div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="overview-grid single-overview">
+      <div class="overview-card">
+        <div class="overview-title">Efficiency (Pout / Pin)</div>
+        <div class="eff-row">
+          <div class="eff-value" id="v_eff">– %</div>
+          <div class="eff-progress">
+            <div class="eff-progress-fill" id="effBarFill"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- PRIMARY ELECTRICAL CURVES -->
+  <div class="section-heading hero-ptvt">
+    <h2>Electrical Characteristics</h2>
+  </div>
+
+  <div class="hero-toolbar">
+    <div class="hero-toolbar-group">
+      <span class="hero-toolbar-label">Source</span>
+      <button class="hero-toggle active" data-source="output">Output</button>
+      <button class="hero-toggle" data-source="input">Input</button>
+    </div>
+    <div class="hero-toolbar-group">
+      <span class="hero-toolbar-label">ช่วงข้อมูล</span>
+      <select id="heroRangeSelect">
+        <option value="5m">5 นาที</option>
+        <option value="1h">1 ชั่วโมง</option>
+        <option value="6h">6 ชั่วโมง</option>
+        <option value="24h">24 ชั่วโมง</option>
+        <option value="7d">7 วัน</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="hero-curve-grid">
+    <div class="hero-chart-card">
+      <div class="hero-chart-title">
+        <h3 id="ptvtTitle">P-V Curve</h3>
+        <span class="hero-current" id="ptvtCurrent">P – W · V – V</span>
+      </div>
+      <div class="hero-sub" id="ptvtSub">X = V(t) · Y = P(t)</div>
+      <canvas id="c_ptvt" class="hero-canvas" width="1100" height="360"></canvas>
+      <div class="hero-axis-guide">
+        <span><strong>X:</strong> Voltage, V(t) (V)</span>
+        <span><strong>Y:</strong> Power, P(t) (W)</span>
+      </div>
+      <div class="hero-compare" id="ptvtCompare">–</div>
+    </div>
+
+    <div class="hero-chart-card">
+      <div class="hero-chart-title">
+        <h3 id="itvtTitle">I-V Curve</h3>
+        <span class="hero-current" id="itvtCurrent">I – A · V – V</span>
+      </div>
+      <div class="hero-sub" id="itvtSub">X = V(t) · Y = I(t)</div>
+      <canvas id="c_itvt" class="hero-canvas" width="1100" height="360"></canvas>
+      <div class="hero-axis-guide">
+        <span><strong>X:</strong> Voltage, V(t) (V)</span>
+        <span><strong>Y:</strong> Current, I(t) (A)</span>
+      </div>
+      <div class="hero-compare" id="itvtCompare">–</div>
+    </div>
+  </div>
+
+  <!-- CHART TOOLBAR -->
+  <div class="section-heading">
+    <h2>Monitoring Trends</h2>
+  </div>
+
+  <div class="chart-toolbar">
+    <div class="chart-tool-group">
+      <span class="chart-tool-label">แสดงกราฟ</span>
+      <button class="chart-toggle active" data-chart="all">ทั้งหมด</button>
+      <button class="chart-toggle" data-chart="0">Vin</button>
+      <button class="chart-toggle" data-chart="1">Vout</button>
+      <button class="chart-toggle" data-chart="2">Pin</button>
+      <button class="chart-toggle" data-chart="3">Pout</button>
+      <button class="chart-toggle" data-chart="4">Irradiation</button>
+      <button class="chart-toggle" data-chart="5">Temperature</button>
+      <button class="chart-toggle" data-chart="6">Duty Cycle</button>
+    </div>
+    <div class="chart-tool-group">
+      <span class="chart-tool-label">ช่วงข้อมูล</span>
+      <select id="rangeSelect">
+        <option value="5m">5 นาที</option>
+        <option value="1h">1 ชั่วโมง</option>
+        <option value="6h">6 ชั่วโมง</option>
+        <option value="24h">24 ชั่วโมง</option>
+        <option value="7d">7 วัน</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="chart-grid" id="chartGrid">
+    <div class="chart-box" data-chart-index="0">
+      <div class="chart-title-row">
+        <h3>Voltage In (Vin)</h3>
+      </div>
+      <canvas id="c_v" class="chart-canvas" width="500" height="220"></canvas>
+      <div class="axis-guide"><span><strong>แกน X:</strong> Time</span><span><strong>แกน Y:</strong> Vin (V)</span>
+      </div>
+    </div>
+
+    <div class="chart-box" data-chart-index="1">
+      <div class="chart-title-row">
+        <h3>Voltage Out (Vout)</h3>
+      </div>
+      <canvas id="c_vout" class="chart-canvas" width="500" height="220"></canvas>
+      <div class="axis-guide"><span><strong>แกน X:</strong> Time</span><span><strong>แกน Y:</strong> Vout (V)</span>
+      </div>
+    </div>
+
+    <div class="chart-box" data-chart-index="2">
+      <div class="chart-title-row">
+        <h3>Power In (Pin)</h3>
+      </div>
+      <canvas id="c_p" class="chart-canvas" width="500" height="220"></canvas>
+      <div class="axis-guide"><span><strong>แกน X:</strong> Time</span><span><strong>แกน Y:</strong> Pin (W)</span>
+      </div>
+    </div>
+
+    <div class="chart-box" data-chart-index="3">
+      <div class="chart-title-row">
+        <h3>Power Out (Pout)</h3>
+      </div>
+      <canvas id="c_pout" class="chart-canvas" width="500" height="220"></canvas>
+      <div class="axis-guide"><span><strong>แกน X:</strong> Time</span><span><strong>แกน Y:</strong> Pout (W)</span>
+      </div>
+    </div>
+
+    <div class="chart-box" data-chart-index="4">
+      <div class="chart-title-row">
+        <h3>Irradiation</h3>
+      </div>
+      <canvas id="c_e" class="chart-canvas" width="500" height="220"></canvas>
+      <div class="axis-guide"><span><strong>แกน X:</strong> Time</span><span><strong>แกน Y:</strong> Irradiation
+          (W/m²)</span></div>
+    </div>
+
+    <div class="chart-box" data-chart-index="5">
+      <div class="chart-title-row">
+        <h3>Temperature</h3>
+      </div>
+      <canvas id="c_temp" class="chart-canvas" width="500" height="220"></canvas>
+      <div class="axis-guide"><span><strong>แกน X:</strong> Time</span><span><strong>แกน Y:</strong> Temperature
+          (°C)</span></div>
+    </div>
+
+    <div class="chart-box" data-chart-index="6">
+      <div class="chart-title-row">
+        <h3>Duty Cycle</h3>
+      </div>
+      <canvas id="c_d" class="chart-canvas" width="500" height="220"></canvas>
+      <div class="axis-guide"><span><strong>แกน X:</strong> Time</span><span><strong>แกน Y:</strong> Duty Cycle
+          (%)</span></div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="section-heading">
+    <h2>Data Log</h2>
+    <span id="countLbl">0 records</span>
+  </div>
+
+  <div class="log-card">
+    <div class="log-head">
+      <div class="log-title">Data Log</div>
+      <div class="log-filters">
+        <label for="logDate">กรองวันที่</label>
+        <input id="logDate" type="date">
+        <button id="clearDateFilter" class="ghost">ทั้งหมด</button>
+      </div>
+    </div>
+    <div class="logwrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date / Time</th>
+            <th>Channel</th>
+            <th>Irradiation</th>
+            <th>Temperature</th>
+            <th>Voltage In</th>
+            <th>Current In</th>
+            <th>Power In</th>
+            <th>Voltage Out</th>
+            <th>Current Out</th>
+            <th>Power Out</th>
+            <th>Duty Cycle</th>
+          </tr>
+        </thead>
+        <tbody id="logBody">
+          <tr class="empty-row">
+            <td colspan="11">ยังไม่มีข้อมูล</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  </div>
+
+  <!-- Tooltip -->
+  <div id="chartTooltip" class="chart-tooltip"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="chartModal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modalTitle">กราฟ</h3>
+        <button class="modal-close" onclick="closeModalDirect()">✕</button>
+      </div>
+      <div class="modal-sub" id="modalSub"></div>
+      <canvas id="c_modal" class="modal-canvas" width="800" height="420"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const MAX_LOG = 500;
+    const CHART_HEIGHT = 250;
+    const MODAL_CHART_HEIGHT = 470;
+    let timer = null;
+    let log = [];
+    let activeModalIdx = null;
+    let visibleCharts = new Set([0, 1, 2, 3, 4, 5, 6]);
+    let selectedRange = '5m';
+    let selectedHeroRange = '5m';
+    let heroSource = 'output';
+    let selectedLogDate = '';
+    let clockBaseMs = Date.now();
+    let clockSynced = false;
+
+    const CHARTS = [
+      {title: 'Voltage In (Vin)', sub: 'แกน X = เวลา · แกน Y = Vin (V)', canvas: 'c_v', key: 'vin', label: 'Vin (V)', color: '#2f6fed', unit: 'V'},
+      {title: 'Voltage Out (Vout)', sub: 'แกน X = เวลา · แกน Y = Vout (V)', canvas: 'c_vout', key: 'vout', label: 'Vout (V)', color: '#178a49', unit: 'V'},
+      {title: 'Power In (Pin)', sub: 'แกน X = เวลา · แกน Y = Pin (W)', canvas: 'c_p', key: 'pin', label: 'Pin (W)', color: '#c9761a', unit: 'W'},
+      {title: 'Power Out (Pout)', sub: 'แกน X = เวลา · แกน Y = Pout (W)', canvas: 'c_pout', key: 'pout', label: 'Pout (W)', color: '#178a49', unit: 'W'},
+      {title: 'Irradiation', sub: 'แกน X = เวลา · แกน Y = Irradiation (W/m²)', canvas: 'c_e', key: 'irradiation', label: 'Irradiation (W/m²)', color: '#2f6fed', unit: 'W/m²'},
+      {title: 'Temperature', sub: 'แกน X = เวลา · แกน Y = Temperature (°C)', canvas: 'c_temp', key: 'temp', label: 'Temperature (°C)', color: '#e2685c', unit: '°C'},
+      {title: 'Duty Cycle', sub: 'แกน X = เวลา · แกน Y = Duty Cycle (%)', canvas: 'c_d', key: 'duty', label: 'Duty Cycle (%)', color: '#6a4cc4', unit: '%'}
+    ];
+
+    const $ = id => document.getElementById(id);
+
+    $('ip').value = localStorage.getItem('esp32_ip') || '192.168.137.226';
+    $('interval').value = localStorage.getItem('esp32_interval') || '10000';
+
+    function safeNum(v) {
+      if (
+        v === null ||
+        v === undefined ||
+        typeof v === 'boolean' ||
+        (typeof v === 'string' && v.trim() === '')
+      ) {
+        return null;
+      }
+
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function fmt(v, d = 2) {
+      const n = safeNum(v);
+      return n === null ? '–' : n.toFixed(d);
+    }
+
+    function fmtDateTime(ms) {
+      if (!ms) return '–';
+      return new Intl.DateTimeFormat('th-TH', {timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}).format(new Date(ms));
+    }
+
+    function fmtThaiDate(ms) {
+      if (!ms) return '–';
+      return new Intl.DateTimeFormat('th-TH', {timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric'}).format(new Date(ms));
+    }
+
+    function fmtThaiTime(ms) {
+      if (!ms) return '–';
+      return new Intl.DateTimeFormat('th-TH', {timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}).format(new Date(ms));
+    }
+
+    function isoDateBKK(ms) {
+      if (!ms) return '';
+      const p = new Intl.DateTimeFormat('en-CA', {timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(new Date(ms));
+      const o = Object.fromEntries(p.map(x => [x.type, x.value]));
+      return `${o.year}-${o.month}-${o.day}`;
+    }
+
+    function setStatus(ok, sub) {
+      $('statusDot').className = 'status-dot ' + (ok ? 'on' : 'off');
+      $('statusText').textContent = ok ? 'ONLINE' : 'OFFLINE';
+      $('statusSub').textContent = sub || (ok ? 'รับข้อมูลจาก ESP32 แล้ว' : 'ยังไม่มีข้อมูลจาก ESP32');
+    }
+
+    function getFirmware(d) {
+      return d.firmware ?? d.fw_version ?? d.version ?? d.fw ?? null;
+    }
+
+    function getRSSI(d) {
+      return d.rssi ?? d.wifi_rssi ?? d.RSSI ?? d.WiFiRSSI ?? null;
+    }
+
+    function getDevice(d) {
+      return d.device ?? d.device_name ?? d.model ?? 'ESP32';
+    }
+
+    /* ---------- CLOCK: Internet API primary + local fallback ---------- */
+    async function fetchJsonWithTimeout(url, ms = 3500) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), ms);
+      try {
+        const res = await fetch(url, {cache: 'no-store', signal: controller.signal});
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return await res.json();
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    async function syncClock() {
+      const apis = [
+        'https://timeapi.io/api/time/current/zone?timeZone=Asia/Bangkok',
+        'https://worldtimeapi.org/api/timezone/Asia/Bangkok'
+      ];
+
+      for (const url of apis) {
+        try {
+          const data = await fetchJsonWithTimeout(url);
+          const dt = data.dateTime || data.datetime;
+          const ms = dt ? new Date(dt).getTime() : NaN;
+          if (Number.isFinite(ms)) {
+            clockBaseMs = ms;
+            clockSynced = true;
+            $('clockSource').textContent = 'เวลาไทย (UTC+7)';
+            return;
+          }
+        } catch (e) {
+          /* try next API */
+        }
+      }
+
+      clockBaseMs = Date.now();
+      clockSynced = false;
+      $('clockSource').textContent = 'เวลาไทย (UTC+7)';
+    }
+
+    function updateClock() {
+      const nowMs = clockBaseMs + (Date.now() - (clockSynced ? Date.nowAtSync : Date.now()));
+      /* Since Date.nowAtSync is set only on successful sync, keep a simpler fallback below. */
+    }
+
+    let clockSyncLocalAnchor = Date.now();
+    function renderClock() {
+      const ms = clockBaseMs + (Date.now() - clockSyncLocalAnchor);
+      $('clockDate').textContent = fmtThaiDate(ms);
+      $('clockTime').textContent = fmtThaiTime(ms);
+    }
+
+    /* ---------- DATA ---------- */
+    function deriveInput(d) {
+      let iin = safeNum(d.iin);
+      let pin = safeNum(d.pin);
+      const vin = safeNum(d.vin);
+      if (iin === null && pin !== null && vin !== null && vin !== 0) iin = pin / vin;
+      if (pin === null && iin !== null && vin !== null) pin = vin * iin;
+      return {iin, pin};
+    }
+
+    function renderCurrent(d) {
+      const {iin, pin} = deriveInput(d);
+      const values = {
+        v_iin: iin !== null ? iin.toFixed(3) + ' A' : '– A',
+        v_vin: safeNum(d.vin) !== null ? fmt(d.vin, 2) + ' V' : '– V',
+        v_pin: pin !== null ? pin.toFixed(2) + ' W' : '– W',
+        v_iout: safeNum(d.iout) !== null ? fmt(d.iout, 3) + ' A' : '– A',
+        v_vout: safeNum(d.vout) !== null ? fmt(d.vout, 2) + ' V' : '– V',
+        v_pout: safeNum(d.pout) !== null ? fmt(d.pout, 2) + ' W' : '– W',
+        v_ch: d.channel !== undefined ? d.channel : '–',
+        v_irr: safeNum(d.irradiation) !== null ? fmt(d.irradiation, 2) + ' W/m²' : '– W/m²',
+        v_temp: safeNum(d.temp) !== null ? fmt(d.temp, 2) + ' °C' : '– °C',
+        v_duty: safeNum(d.duty) !== null ? fmt(d.duty, 2) + ' %' : '– %'
+      };
+      Object.entries(values).forEach(([id, v]) => $(id).textContent = v);
+
+      const eff = pin !== null && pin > 0 && safeNum(d.pout) !== null ? (safeNum(d.pout) / pin) * 100 : null;
+      $('v_eff').textContent = eff === null ? '– %' : eff.toFixed(1) + ' %';
+      $('effBarFill').style.width = Math.max(0, Math.min(100, eff ?? 0)) + '%';
+
+      const prev = log[0];
+      const metricPairs = [
+        ['iin', iin], ['vin', safeNum(d.vin)], ['pin', pin], ['iout', safeNum(d.iout)], ['vout', safeNum(d.vout)], ['pout', safeNum(d.pout)]
+      ];
+      metricPairs.forEach(([key, val]) => updateTrend('trend_' + key, val, prev ? safeNum(prev[key]) : null));
+
+      $('sysDevice').textContent = getDevice(d);
+      const fw = getFirmware(d);
+      $('sysFirmware').textContent = 'Firmware: ' + (fw ?? '–');
+      $('sysIP').textContent = $('ip').value.trim() || '–';
+      const rssi = safeNum(getRSSI(d));
+      $('sysRSSI').textContent = rssi === null ? '–' : rssi + ' dBm';
+      return {iin, pin, eff};
+    }
+
+    function updateTrend(id, current, previous) {
+      const el = $(id);
+      if (current === null || previous === null || previous === 0) {
+        el.textContent = 'ยังไม่มีข้อมูลก่อนหน้า';
+        el.className = 'trend';
+        return;
+      }
+      const pct = ((current - previous) / Math.abs(previous)) * 100;
+      if (!Number.isFinite(pct)) {
+        el.textContent = '–'; el.className = 'trend'; return;
+      }
+      const arrow = pct >= 0 ? '↑' : '↓';
+      el.textContent = `${arrow} ${Math.abs(pct).toFixed(1)}% จากค่าก่อนหน้า`;
+      el.className = 'trend ' + (pct >= 0 ? 'up' : 'down');
+    }
+
+    function addLogRow(d, receivedMs, responseMs) {
+      const {iin, pin} = deriveInput(d);
+      const item = {
+        ts: receivedMs,
+        t: fmtDateTime(receivedMs),
+        channel: d.channel,
+        irradiation: safeNum(d.irradiation),
+        temp: safeNum(d.temp),
+        iin,
+        vin: safeNum(d.vin),
+        pin,
+        iout: safeNum(d.iout),
+        vout: safeNum(d.vout),
+        pout: safeNum(d.pout),
+        duty: safeNum(d.duty),
+        rssi: safeNum(getRSSI(d)),
+        firmware: getFirmware(d),
+        responseMs
+      };
+      log.unshift(item);
+      if (log.length > MAX_LOG) log.pop();
+      renderLog();
+      drawAllCharts();
+      drawPTVT();
+    }
+
+    function renderLog() {
+      const tbody = $('logBody');
+      const filtered = selectedLogDate ? log.filter(x => isoDateBKK(x.ts) === selectedLogDate) : log;
+      tbody.innerHTML = '';
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="11">ไม่พบข้อมูลตามวันที่เลือก</td></tr>';
+      } else {
+        filtered.forEach(d => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+          <td>${d.t}</td>
+          <td>${d.channel ?? ''}</td>
+          <td>${fmt(d.irradiation, 2)}</td>
+          <td>${fmt(d.temp, 2)}</td>
+          <td>${fmt(d.vin, 2)}</td>
+          <td>${fmt(d.iin, 3)}</td>
+          <td>${fmt(d.pin, 2)}</td>
+          <td>${fmt(d.vout, 2)}</td>
+          <td>${fmt(d.iout, 3)}</td>
+          <td>${fmt(d.pout, 2)}</td>
+          <td>${fmt(d.duty, 2)}</td>`;
+          tbody.appendChild(tr);
+        });
+      }
+      $('countLbl').textContent = `${filtered.length} / ${log.length} records`;
+    }
+
+    function rangeMs(range) {
+      return ({'5m': 5 * 60 * 1000, '1h': 60 * 60 * 1000, '6h': 6 * 60 * 60 * 1000, '24h': 24 * 60 * 60 * 1000, '7d': 7 * 24 * 60 * 60 * 1000})[range] || 5 * 60 * 1000;
+    }
+
+    function chartData() {
+      const cutoff = Date.now() - rangeMs(selectedRange);
+      return log.filter(d => d.ts >= cutoff);
+    }
+
+    /* ---------- CHART SIZING ---------- */
+    function resizeCanvases() {
+      document.querySelectorAll('canvas.chart-canvas').forEach(canvas => {
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width > 0) {
+          const w = Math.max(1, Math.floor(rect.width));
+          if (canvas.width !== w || canvas.height !== CHART_HEIGHT) {
+            canvas.width = w;
+            canvas.height = CHART_HEIGHT;
+          }
+        }
+      });
+      const modal = $('c_modal');
+      if (modal) {
+        const rect = modal.parentElement.getBoundingClientRect();
+        if (rect.width > 0) {
+          const w = Math.max(1, Math.floor(rect.width));
+          if (modal.width !== w || modal.height !== MODAL_CHART_HEIGHT) {
+            modal.width = w;
+            modal.height = MODAL_CHART_HEIGHT;
+          }
+        }
+      }
+      drawAllCharts();
+      drawPTVT();
+      drawITVT();
+    }
+
+    /* ---------- ENGINEERING-STYLE CHART DRAW ---------- */
+    function drawAllCharts() {
+      CHARTS.forEach((cfg, idx) => drawPair(cfg, idx));
+    }
+
+    function getTimeScale(data) {
+      if (data.length < 2) return {unit: 's', divisor: 1000};
+      const span = Math.max(0, data[data.length - 1].ts - data[0].ts);
+      if (span >= 3600000) return {unit: 'h', divisor: 3600000};
+      if (span >= 60000) return {unit: 'min', divisor: 60000};
+      return {unit: 's', divisor: 1000};
+    }
+
+    function formatElapsed(ms, scale) {
+      const v = ms / scale.divisor;
+      if (scale.unit === 'h') return v.toFixed(v < 10 ? 1 : 0) + ' h';
+      if (scale.unit === 'min') return v.toFixed(v < 10 ? 1 : 0) + ' min';
+      return v.toFixed(v < 10 ? 1 : 0) + ' s';
+    }
+
+    function formatAxisTime(ms, startMs, scale) {
+      const elapsed = ms - startMs;
+      const value = elapsed / scale.divisor;
+      if (scale.unit === 'h') return value.toFixed(1);
+      if (scale.unit === 'min') return value.toFixed(1);
+      return value.toFixed(0);
+    }
+
+    function drawAxes(ctx, w, h, padL, padR, padT, padB, data, scale, vMin, vMax, toX, toY) {
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      // Plot grid (engineering-paper style)
+      ctx.save();
+      ctx.strokeStyle = '#d9dde3';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+
+      for (let i = 0; i <= 5; i++) {
+        const gy = padT + (i / 5) * plotH;
+        ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+      }
+      for (let i = 0; i <= 6; i++) {
+        const gx = padL + (i / 6) * plotW;
+        ctx.beginPath(); ctx.moveTo(gx, padT); ctx.lineTo(gx, h - padB); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+
+      // Axes
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, h - padB); ctx.lineTo(w - padR, h - padB); ctx.stroke();
+      ctx.restore();
+
+      // Y ticks
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#555';
+      ctx.textAlign = 'right';
+      for (let i = 0; i <= 5; i++) {
+        const f = i / 5;
+        const gy = padT + f * plotH;
+        const value = vMax - (vMax - vMin) * f;
+        ctx.fillText(formatChartValue(value), padL - 7, gy + 3);
+        ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(padL - 3, gy); ctx.lineTo(padL, gy); ctx.stroke();
+      }
+
+      // X ticks by elapsed time
+      ctx.textAlign = 'center';
+      for (let i = 0; i <= 6; i++) {
+        const frac = i / 6;
+        const gx = padL + frac * plotW;
+        const t = data[0].ts + frac * (data[data.length - 1].ts - data[0].ts);
+        ctx.fillStyle = '#555';
+        ctx.fillText(formatAxisTime(t, data[0].ts, scale), gx, h - padB + 15);
+        ctx.strokeStyle = '#555';
+        ctx.beginPath(); ctx.moveTo(gx, h - padB); ctx.lineTo(gx, h - padB + 4); ctx.stroke();
+      }
+
+      // Axis labels
+      ctx.fillStyle = '#333';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Time (${scale.unit})`, padL + plotW / 2, h - 4);
+      ctx.save();
+      ctx.translate(12, padT + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(`Value (${data._unit || ''})`, 0, 0);
+      ctx.restore();
+      ctx.textAlign = 'left';
+    }
+
+    function drawPair(cfg, idx) {
+      const canvas = $(cfg.canvas);
+      if (!canvas) return;
+
+      if (!visibleCharts.has(idx)) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas._chartPoints = null;
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0) {
+        const desiredW = Math.max(1, Math.floor(rect.width));
+        if (canvas.width !== desiredW || canvas.height !== CHART_HEIGHT) {
+          canvas.width = desiredW;
+          canvas.height = CHART_HEIGHT;
+        }
+      }
+
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const recent = chartData()
+        .filter(d => safeNum(d[cfg.key]) !== null && safeNum(d.ts) !== null)
+        .slice(0, 180)
+        .reverse();
+
+      if (recent.length < 2) {
+        ctx.fillStyle = '#999';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(recent.length === 0 ? 'รอข้อมูล...' : 'รอข้อมูลเพิ่มเติม...', w / 2, h / 2);
+        ctx.textAlign = 'left';
+        canvas._chartPoints = {cfg, recent, empty: true};
+        return;
+      }
+
+      const padL = 55, padR = 16, padT = 30, padB = 40;
+      const n = recent.length;
+      const scale = getTimeScale(recent);
+      const span = Math.max(1, recent[n - 1].ts - recent[0].ts);
+      const toX = i => padL + ((recent[i].ts - recent[0].ts) / span) * (w - padL - padR);
+      const vals = recent.map(d => safeNum(d[cfg.key])).filter(v => v !== null);
+
+      let vMin = Math.min(...vals), vMax = Math.max(...vals);
+      if (vMin === vMax) {
+        const offset = Math.abs(vMin) * 0.05 || 1;
+        vMin -= offset; vMax += offset;
+      }
+      const pad = (vMax - vMin) * 0.10;
+      vMin -= pad; vMax += pad;
+      const toY = v => h - padB - ((v - vMin) / (vMax - vMin)) * (h - padT - padB);
+
+      drawAxes(ctx, w, h, padL, padR, padT, padB, recent, scale, vMin, vMax, toX, toY);
+
+      // Main electrical trace
+      ctx.strokeStyle = cfg.color;
+      ctx.lineWidth = 2.2;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      let started = false;
+      recent.forEach((d, i) => {
+        const v = safeNum(d[cfg.key]);
+        if (v === null) return;
+        const x = toX(i), y = toY(v);
+        if (!started) {ctx.moveTo(x, y); started = true;} else {ctx.lineTo(x, y);}
+      });
+      ctx.stroke();
+
+      // Measurement points
+      recent.forEach((d, i) => {
+        const v = safeNum(d[cfg.key]);
+        if (v === null) return;
+        const x = toX(i), y = toY(v);
+        ctx.beginPath();
+        ctx.arc(x, y, 2.8, 0, Math.PI * 2);
+        ctx.fillStyle = cfg.color;
+        ctx.fill();
+      });
+
+      // Title / legend
+      const lastVal = safeNum(recent[n - 1][cfg.key]);
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#111';
+      ctx.fillText(cfg.title, padL, 15);
+      ctx.fillStyle = cfg.color;
+      ctx.font = '11px sans-serif';
+      ctx.fillText(`— ${cfg.label}: ${lastVal === null ? '–' : lastVal.toFixed(3)} ${cfg.unit}`, padL + ctx.measureText(cfg.title).width + 12, 15);
+
+      canvas._chartPoints = {cfg, recent, toX, padT, padB, padL, padR, toY, scale};
+    }
+
+    function formatChartValue(v) {
+      const n = safeNum(v);
+      if (n === null) return '–';
+      if (Math.abs(n) >= 1000) return n.toFixed(0);
+      if (Math.abs(n) >= 100) return n.toFixed(0);
+      if (Math.abs(n) >= 10) return n.toFixed(1);
+      return n.toFixed(2);
+    }
+
+    /* ---------- PRIMARY P-V / I-V CURVES ---------- */
+    function heroSourceConfig() {
+      return heroSource === 'input'
+        ? {
+          pKey: 'pin', vKey: 'vin', iKey: 'iin',
+          pLabel: 'Pin (W)', vLabel: 'Vin (V)', iLabel: 'Iin (A)',
+          pUnit: 'W', vUnit: 'V', iUnit: 'A',
+          pColor: '#c9761a', iColor: '#c9761a', name: 'Input'
+        }
+        : {
+          pKey: 'pout', vKey: 'vout', iKey: 'iout',
+          pLabel: 'Pout (W)', vLabel: 'Vout (V)', iLabel: 'Iout (A)',
+          pUnit: 'W', vUnit: 'V', iUnit: 'A',
+          pColor: '#178a49', iColor: '#178a49', name: 'Output'
+        };
+    }
+
+    function getPVData() {
+      const cfg = heroSourceConfig();
+      return chartData()
+        .map(d => ({...d, pv: safeNum(d[cfg.pKey]), vv: safeNum(d[cfg.vKey])}))
+        .filter(d => d.ts !== null && d.pv !== null && d.vv !== null)
+        .sort((a, b) => a.vv - b.vv);
+    }
+
+    function getIVData() {
+      const cfg = heroSourceConfig();
+      return chartData()
+        .map(d => ({...d, iv: safeNum(d[cfg.iKey]), vv: safeNum(d[cfg.vKey])}))
+        .filter(d => d.ts !== null && d.iv !== null && d.vv !== null)
+        .sort((a, b) => a.vv - b.vv);
+    }
+
+    function drawCharacteristicCurve(canvasId, data, yKey, cfg, yLabel, yUnit, yColor, infoKey) {
+      const canvas = $(canvasId);
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0) {
+        const w = Math.max(1, Math.floor(rect.width));
+        if (canvas.width !== w || canvas.height !== 300) {canvas.width = w; canvas.height = 300;}
+      }
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const padL = 58, padR = 18, padT = 40, padB = 44;
+      if (data.length < 2) {
+        ctx.fillStyle = '#999'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(data.length === 0 ? 'รอข้อมูล...' : 'รอข้อมูลเพิ่มเติม...', w / 2, h / 2);
+        canvas[infoKey] = null;
+        ctx.textAlign = 'left';
+        return;
+      }
+
+      const xVals = data.map(d => d.vv);
+      const yVals = data.map(d => d[yKey]);
+      let xMin = Math.min(...xVals), xMax = Math.max(...xVals), yMin = Math.min(...yVals), yMax = Math.max(...yVals);
+      if (xMin === xMax) {const off = Math.abs(xMin) * .05 || 1; xMin -= off; xMax += off;}
+      if (yMin === yMax) {const off = Math.abs(yMin) * .05 || 1; yMin -= off; yMax += off;}
+      const xPad = (xMax - xMin) * .10, yPad = (yMax - yMin) * .10;
+      xMin -= xPad; xMax += xPad; yMin -= yPad; yMax += yPad;
+
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const toX = v => padL + ((v - xMin) / (xMax - xMin)) * plotW;
+      const toY = v => h - padB - ((v - yMin) / (yMax - yMin)) * plotH;
+
+      drawEngineeringAxes(ctx, w, h, padL, padR, padT, padB, xMin, xMax, yMin, yMax, 'Voltage (V)', yLabel, yColor, '#333');
+
+      ctx.strokeStyle = yColor; ctx.lineWidth = 2.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.beginPath();
+      data.forEach((d, i) => {const x = toX(d.vv), y = toY(d[yKey]); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);});
+      ctx.stroke();
+
+      data.forEach(d => {
+        const x = toX(d.vv), y = toY(d[yKey]);
+        ctx.beginPath(); ctx.arc(x, y, 3.2, 0, Math.PI * 2); ctx.fillStyle = yColor; ctx.fill();
+      });
+
+      ctx.textAlign = 'left'; ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = '#111';
+      ctx.fillText(`${cfg.name} ${yLabel.split(' ')[0]}-V`, padL, 18);
+
+      const latest = data[data.length - 1];
+      ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = yColor;
+      ctx.fillText(`${yLabel}: ${latest[yKey].toFixed(3)} ${yUnit}`, padL, 32);
+      ctx.fillStyle = '#2f6fed';
+      ctx.fillText(`V(t): ${latest.vv.toFixed(3)} V`, padL + 145, 32);
+
+      canvas[infoKey] = {cfg, data, padL, padR, padT, padB, toX, toY, xMin, xMax, yMin, yMax, yKey, yLabel, yUnit, yColor};
+    }
+
+    function drawPTVT() {
+      const cfg = heroSourceConfig();
+      const data = getPVData();
+      const canvas = $('c_ptvt');
+      $('ptvtTitle').textContent = `P-V Curve · ${cfg.name}`;
+      $('ptvtSub').textContent = `X = V(t) · Y = P(t)`;
+      if (data.length) {
+        const latest = data.reduce((a, b) => a.ts > b.ts ? a : b);
+        $('ptvtCurrent').textContent = `P(t) ${latest.pv.toFixed(3)} W · V(t) ${latest.vv.toFixed(3)} V`;
+      } else {
+        $('ptvtCurrent').textContent = 'P – W · V – V';
+      }
+      drawCharacteristicCurve('c_ptvt', data, 'pv', cfg, 'Power (W)', 'W', cfg.pColor, '_pvInfo');
+      $('ptvtCompare').textContent = data.length >= 2
+        ? 'คู่ข้อมูล V(t), P(t) จากเวลาเดียวกัน'
+        : 'รอข้อมูลอย่างน้อย 2 จุด';
+    }
+
+    function drawITVT() {
+      const cfg = heroSourceConfig();
+      const data = getIVData();
+      const canvas = $('c_itvt');
+      $('itvtTitle').textContent = `I-V Curve · ${cfg.name}`;
+      $('itvtSub').textContent = `X = V(t) · Y = I(t)`;
+      if (data.length) {
+        const latest = data.reduce((a, b) => a.ts > b.ts ? a : b);
+        $('itvtCurrent').textContent = `I(t) ${latest.iv.toFixed(3)} A · V(t) ${latest.vv.toFixed(3)} V`;
+      } else {
+        $('itvtCurrent').textContent = 'I – A · V – V';
+      }
+      drawCharacteristicCurve('c_itvt', data, 'iv', cfg, 'Current (A)', 'A', cfg.iColor, '_ivInfo');
+      $('itvtCompare').textContent = data.length >= 2
+        ? 'คู่ข้อมูล V(t), I(t) จากเวลาเดียวกัน'
+        : 'รอข้อมูลอย่างน้อย 2 จุด';
+    }
+
+    function pvPointerMove(event) {
+      const canvas = event.currentTarget, info = canvas._pvInfo;
+      if (!info || info.data.length < 2) {hideTooltip(); return;}
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const usable = Math.max(1, rect.width - info.padL - info.padR);
+      let idx = Math.round(((x - info.padL) / usable) * (info.data.length - 1));
+      idx = Math.max(0, Math.min(info.data.length - 1, idx));
+      const d = info.data[idx];
+      $('ptvtCompare').textContent = `${fmtDateTime(d.ts)} · V(t) ${d.vv.toFixed(3)} V · P(t) ${d.pv.toFixed(3)} W`;
+      const fresh = canvas._pvInfo;
+      if (!fresh) return;
+      drawPTVT();
+      const gx = fresh.toX(d.vv), gy = fresh.toY(d.pv), ctx = canvas.getContext('2d');
+      ctx.save(); ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.1; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(gx, fresh.padT); ctx.lineTo(gx, canvas.height - fresh.padB); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(gx, gy, 4.5, 0, Math.PI * 2); ctx.fillStyle = fresh.yColor; ctx.fill(); ctx.restore();
+    }
+
+    function pvPointerLeave() {hideTooltip(); drawPTVT();}
+
+    function ivPointerMove(event) {
+      const canvas = event.currentTarget, info = canvas._ivInfo;
+      if (!info || info.data.length < 2) {hideTooltip(); return;}
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const usable = Math.max(1, rect.width - info.padL - info.padR);
+      let idx = Math.round(((x - info.padL) / usable) * (info.data.length - 1));
+      idx = Math.max(0, Math.min(info.data.length - 1, idx));
+      const d = info.data[idx];
+      $('itvtCompare').textContent = `${fmtDateTime(d.ts)} · V(t) ${d.vv.toFixed(3)} V · I(t) ${d.iv.toFixed(3)} A`;
+      const fresh = canvas._ivInfo;
+      if (!fresh) return;
+      drawITVT();
+      const gx = fresh.toX(d.vv), gy = fresh.toY(d.iv), ctx = canvas.getContext('2d');
+      ctx.save(); ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.1; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(gx, fresh.padT); ctx.lineTo(gx, canvas.height - fresh.padB); ctx.stroke(); ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(gx, gy, 4.5, 0, Math.PI * 2); ctx.fillStyle = fresh.yColor; ctx.fill(); ctx.restore();
+    }
+
+    function itvtPointerLeave() {hideTooltip(); drawITVT();}
+
+    function drawEngineeringAxes(ctx, w, h, padL, padR, padT, padB, xMin, xMax, yMin, yMax, xLabel, yLabel, yColor, axisColor) {
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      ctx.save();
+      ctx.strokeStyle = '#d9dde3'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+      for (let i = 0; i <= 6; i++) {
+        const gx = padL + (i / 6) * plotW; ctx.beginPath(); ctx.moveTo(gx, padT); ctx.lineTo(gx, h - padB); ctx.stroke();
+        const gy = padT + (i / 6) * plotH; ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+      }
+      ctx.setLineDash([]); ctx.strokeStyle = '#333'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, h - padB); ctx.lineTo(w - padR, h - padB); ctx.stroke();
+      ctx.font = '10px sans-serif'; ctx.fillStyle = '#333'; ctx.textAlign = 'center';
+      for (let i = 0; i <= 6; i++) {
+        const f = i / 6, gx = padL + f * plotW, gy = padT + (1 - f) * plotH;
+        const xv = xMin + f * (xMax - xMin), yv = yMin + f * (yMax - yMin);
+        ctx.fillText(formatChartValue(xv), gx, h - padB + 16);
+        ctx.textAlign = 'right'; ctx.fillText(formatChartValue(yv), padL - 8, gy + 3); ctx.textAlign = 'center';
+      }
+      ctx.font = 'bold 11px sans-serif'; ctx.fillStyle = axisColor; ctx.textAlign = 'center'; ctx.fillText(xLabel, padL + plotW / 2, h - 8);
+      ctx.save(); ctx.translate(16, padT + plotH / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = yColor; ctx.fillText(yLabel, 0, 0); ctx.restore();
+      ctx.restore();
+    }
+
+    /* ---------- TOOLTIP ---------- */
+    function handleCanvasMove(event) {
+      const canvas = event.currentTarget;
+      const info = canvas._chartPoints;
+      const tooltip = $('chartTooltip');
+      if (!info || info.empty || !info.recent || info.recent.length < 2) {
+        tooltip.style.display = 'none';
+        return;
+      }
+
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const usable = Math.max(1, rect.width - info.padL - info.padR);
+      let idx = Math.round(((x - info.padL) / usable) * (info.recent.length - 1));
+      idx = Math.max(0, Math.min(info.recent.length - 1, idx));
+      const d = info.recent[idx];
+      if (!d) {tooltip.style.display = 'none'; return;}
+
+      const ts = fmtDateTime(d.ts);
+      const value = safeNum(d[info.cfg.key]);
+      const elapsed = formatElapsed(info.recent[idx].ts - info.recent[0].ts, info.scale);
+      tooltip.innerHTML = `<strong>${ts}</strong><br>Elapsed: ${elapsed}<br>${info.cfg.label}: ${value === null ? '–' : value.toFixed(3)} ${info.cfg.unit}`;
+      tooltip.style.display = 'block';
+      const left = Math.min(window.innerWidth - 230, event.clientX + 14);
+      const top = Math.min(window.innerHeight - 100, event.clientY + 14);
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+    }
+
+    function hideTooltip() {$('chartTooltip').style.display = 'none';}
+
+    /* ---------- MODAL ---------- */
+    function openModal(idx) {
+      activeModalIdx = idx;
+      const cfg = CHARTS[idx];
+      $('modalTitle').textContent = cfg.title;
+      $('modalSub').textContent = cfg.sub;
+      $('chartModal').classList.add('active');
+      requestAnimationFrame(() => drawModalChart(idx));
+    }
+
+    function drawModalChart(idx) {
+      const cfg = CHARTS[idx];
+      const canvas = $('c_modal');
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0) {
+        canvas.width = Math.max(1, Math.floor(rect.width));
+        canvas.height = MODAL_CHART_HEIGHT;
+      }
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const recent = chartData()
+        .filter(d => safeNum(d[cfg.key]) !== null && safeNum(d.ts) !== null)
+        .slice(0, 300)
+        .reverse();
+
+      if (recent.length < 2) {
+        ctx.fillStyle = '#999'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('รอข้อมูลเพิ่มเติม...', w / 2, h / 2); ctx.textAlign = 'left';
+        return;
+      }
+
+      const padL = 64, padR = 20, padT = 36, padB = 48, n = recent.length;
+      const scale = getTimeScale(recent);
+      const span = Math.max(1, recent[n - 1].ts - recent[0].ts);
+      const toX = i => padL + ((recent[i].ts - recent[0].ts) / span) * (w - padL - padR);
+      const vals = recent.map(d => safeNum(d[cfg.key])).filter(v => v !== null);
+      let vMin = Math.min(...vals), vMax = Math.max(...vals);
+      if (vMin === vMax) {const offset = Math.abs(vMin) * 0.05 || 1; vMin -= offset; vMax += offset;}
+      const pad = (vMax - vMin) * 0.10; vMin -= pad; vMax += pad;
+      const toY = v => h - padB - ((v - vMin) / (vMax - vMin)) * (h - padT - padB);
+
+      // Grid / axes
+      ctx.strokeStyle = '#d9dde3'; ctx.lineWidth = 1; ctx.setLineDash([2, 3]);
+      for (let i = 0; i <= 6; i++) {
+        const gx = padL + (i / 6) * (w - padL - padR);
+        ctx.beginPath(); ctx.moveTo(gx, padT); ctx.lineTo(gx, h - padB); ctx.stroke();
+      }
+      for (let i = 0; i <= 6; i++) {
+        const gy = padT + (i / 6) * (h - padT - padB);
+        ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#333'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, h - padB); ctx.lineTo(w - padR, h - padB); ctx.stroke();
+
+      ctx.font = '11px sans-serif'; ctx.fillStyle = '#555'; ctx.textAlign = 'right';
+      for (let i = 0; i <= 6; i++) {
+        const f = i / 6;
+        const gy = padT + f * (h - padT - padB);
+        const value = vMax - (vMax - vMin) * f;
+        ctx.fillText(formatChartValue(value), padL - 8, gy + 4);
+      }
+      ctx.textAlign = 'center';
+      for (let i = 0; i <= 6; i++) {
+        const frac = i / 6;
+        const gx = padL + frac * (w - padL - padR);
+        const t = recent[0].ts + frac * (recent[n - 1].ts - recent[0].ts);
+        ctx.fillText(formatAxisTime(t, recent[0].ts, scale), gx, h - padB + 17);
+      }
+
+      ctx.font = 'bold 12px sans-serif'; ctx.fillStyle = '#333';
+      ctx.fillText(`Time (${scale.unit})`, padL + (w - padL - padR) / 2, h - 8);
+      ctx.save(); ctx.translate(14, padT + (h - padT - padB) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(`Value (${cfg.unit})`, 0, 0); ctx.restore();
+
+      // Trace
+      ctx.strokeStyle = cfg.color; ctx.lineWidth = 2.6; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.beginPath();
+      recent.forEach((d, i) => {
+        const v = safeNum(d[cfg.key]); if (v === null) return;
+        const x = toX(i), y = toY(v); i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }); ctx.stroke();
+
+      recent.forEach((d, i) => {
+        const v = safeNum(d[cfg.key]); if (v === null) return;
+        const x = toX(i), y = toY(v); ctx.beginPath(); ctx.arc(x, y, 3.4, 0, Math.PI * 2); ctx.fillStyle = cfg.color; ctx.fill();
+      });
+
+      ctx.textAlign = 'left'; ctx.font = 'bold 14px sans-serif'; ctx.fillStyle = '#111'; ctx.fillText(cfg.title, padL, 19);
+      ctx.fillStyle = cfg.color; ctx.font = '12px sans-serif'; ctx.fillText(`— ${cfg.label}`, padL + ctx.measureText(cfg.title).width + 14, 19);
+
+      canvas._chartPoints = {cfg, recent, toX, padT, padB, padL, padR, toY, scale};
+    }
+
+    function closeModal(e) {if (e.target.id === 'chartModal') closeModalDirect();}
+    function closeModalDirect() {$('chartModal').classList.remove('active'); activeModalIdx = null; hideTooltip();}
+
+    /* ---------- FETCH ---------- */
+    async function poll() {
+      const ip = $('ip').value.trim();
+      if (!ip) return;
+      $('sysIP').textContent = ip;
+      const started = performance.now();
+      try {
+        const res = await fetch(`http://${ip}/data`, {cache: 'no-store'});
+        const responseMs = Math.round(performance.now() - started);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        const d = await res.json();
+
+        // เปอร์เซ็นต์คำสั่งเลือกช่อง ไม่ใช่ PWM Duty จริง
+        const outputValue = safeNum(d.output_value);
+        d.duty = outputValue === null
+          ? null
+          : (outputValue / 1023.0) * 100.0;
+
+        // ยังไม่ได้รับข้อมูลจากบอร์ด #1
+        if (d.uart_received === false) {
+          d.temp = null;
+          d.irradiation = null;
+          d.duty = null;
+        }
+        const receivedMs = Date.now();
+        $('sysResponse').textContent = responseMs + ' ms';
+        setStatus(true, 'เชื่อมต่อแล้ว');
+        $('errMsg').textContent = '';
+        const {pin, eff} = renderCurrent(d);
+        addLogRow(d, receivedMs, responseMs);
+      } catch (e) {
+        setStatus(false, 'กำลังรอการเชื่อมต่อ');
+        $('errMsg').textContent = 'เชื่อมต่อไม่ได้: ' + e.message;
+      }
+    }
+
+    /* ---------- CONTROLS ---------- */
+    $('startBtn').onclick = () => {
+      const ip = $('ip').value.trim();
+      if (!ip) return;
+      localStorage.setItem('esp32_ip', ip);
+      localStorage.setItem('esp32_interval', $('interval').value);
+      if (timer) clearInterval(timer);
+      $('startBtn').style.display = 'none';
+      $('stopBtn').style.display = 'inline-block';
+      poll();
+      timer = setInterval(poll, Math.max(200, parseInt($('interval').value) || 1000));
+    };
+
+    $('stopBtn').onclick = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+      setStatus(false, 'หยุดการอ่านข้อมูล');
+      $('startBtn').style.display = 'inline-block';
+      $('stopBtn').style.display = 'none';
+    };
+
+    $('clearBtn').onclick = () => {
+      log = []; selectedLogDate = ''; $('logDate').value = '';
+      renderLog(); drawAllCharts(); drawPTVT(); drawITVT();
+    };
+
+    $('csvBtn').onclick = () => {
+      const filtered = selectedLogDate ? log.filter(x => isoDateBKK(x.ts) === selectedLogDate) : log;
+      if (filtered.length === 0) return;
+      const header = 'Date/Time,Channel,Irradiation,Temperature,Voltage In,Current In,Power In,Voltage Out,Current Out,Power Out,Duty Cycle\n';
+      const rows = filtered.map(d => [
+        JSON.stringify(d.t), d.channel ?? '', d.irradiation ?? '', d.temp ?? '', d.vin ?? '', d.iin ?? '', d.pin ?? '', d.vout ?? '', d.iout ?? '', d.pout ?? '', d.duty ?? ''
+      ].join(',')).join('\n');
+      const blob = new Blob([header + rows], {type: 'text/csv;charset=utf-8;'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'esp32_power_log_' + Date.now() + '.csv'; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+
+    $('logDate').addEventListener('change', () => {selectedLogDate = $('logDate').value; renderLog();});
+    $('clearDateFilter').onclick = () => {selectedLogDate = ''; $('logDate').value = ''; renderLog();};
+    $('rangeSelect').addEventListener('change', e => {selectedRange = e.target.value; drawAllCharts();});
+    $('heroRangeSelect').addEventListener('change', e => {selectedRange = e.target.value; drawAllCharts(); drawPTVT(); drawITVT();});
+    document.querySelectorAll('.hero-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        heroSource = btn.dataset.source;
+        document.querySelectorAll('.hero-toggle').forEach(b => b.classList.toggle('active', b === btn));
+        drawPTVT(); drawITVT();
+      });
+    });
+
+    document.querySelectorAll('.chart-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const value = btn.dataset.chart;
+        if (value === 'all') {
+          visibleCharts = new Set([0, 1, 2, 3, 4, 5, 6]);
+          document.querySelectorAll('.chart-toggle').forEach(b => b.classList.toggle('active', b.dataset.chart === 'all'));
+        } else {
+          visibleCharts = new Set([Number(value)]);
+          document.querySelectorAll('.chart-toggle').forEach(b => b.classList.toggle('active', b.dataset.chart === value));
+        }
+        document.querySelectorAll('.chart-box').forEach(box => box.classList.toggle('hidden', !visibleCharts.has(Number(box.dataset.chartIndex))));
+        resizeCanvases();
+      });
+    });
+
+    document.querySelectorAll('canvas.chart-canvas').forEach(canvas => {
+      canvas.addEventListener('mousemove', handleCanvasMove);
+      canvas.addEventListener('mouseleave', hideTooltip);
+      canvas.addEventListener('click', () => {
+        const idx = Number(canvas.closest('.chart-box')?.dataset.chartIndex);
+        if (Number.isInteger(idx)) openModal(idx);
+      });
+    });
+
+    $('c_modal').addEventListener('mousemove', handleCanvasMove);
+    $('c_modal').addEventListener('mouseleave', hideTooltip);
+
+    const observer = 'ResizeObserver' in window ? new ResizeObserver(() => requestAnimationFrame(resizeCanvases)) : null;
+    if (observer) observer.observe($('chartGrid'));
+    window.addEventListener('resize', () => requestAnimationFrame(resizeCanvases));
+
+    /* ---------- INIT ---------- */
+    setStatus(false, 'ยังไม่มีการเชื่อมต่อ');
+    renderLog();
+    requestAnimationFrame(() => {resizeCanvases(); drawPTVT(); drawITVT(); requestAnimationFrame(() => {resizeCanvases(); drawPTVT(); drawITVT();});});
+    setInterval(renderClock, 1000);
+    renderClock();
+
+    (async () => {
+      clockSyncLocalAnchor = Date.now();
+      await syncClock();
+      clockSyncLocalAnchor = Date.now();
+      renderClock();
+    })();
+  </script>
+</body>
+
+</html>
